@@ -1,0 +1,428 @@
+<html>
+<body>
+
+<canvas id='canvas' style='border: 1px solid #000'></canvas>
+<h4>ScorePlayer1: <div id='score'></div>     ScorePlayer2: <div id='score2'></div></h4>
+
+<script>
+
+var canvas = document.getElementById('canvas');
+var scoreEl = document.getElementById('score');
+var scoreEl2 = document.getElementById('score2');
+var ctx = canvas.getContext('2d');
+var nBlocks = 12;
+var blockSize = 44;
+var w = nBlocks * blockSize;
+var t = nBlocks * blockSize;
+
+canvas.setAttribute('width', w);
+canvas.setAttribute('height', w);
+
+canvas.setAttribute('width', t);
+canvas.setAttribute('height', t);
+
+var score = 0;
+var score2 = 0;
+var world = [
+    ['W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W'],
+    ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W', 'T', 'W'],
+    ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'T', 'W', ' ', 'W'],
+    ['W', ' ', ' ', ' ', ' ', 'W', 'W', 'W', 'W', 'W', ' ', 'W'],
+    ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
+    ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
+    ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
+    ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
+    ['W', ' ', 'W', 'W', 'W', 'W', 'W', ' ', ' ', ' ', ' ', 'W'],
+    ['W', ' ', 'W', 'T', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
+    ['W', 'T', 'W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
+    ['W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W']
+];
+
+
+var portalsWorld = [
+    ['W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W'],
+    ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '1', 'W', 'T', 'W'],
+    ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'T', 'W', '2', 'W'],
+    ['W', ' ', ' ', ' ', ' ', 'W', 'W', 'W', 'W', 'W', ' ', 'W'],
+    ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
+    ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
+    ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
+    ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
+    ['W', ' ', 'W', 'W', 'W', 'W', 'W', ' ', ' ', ' ', ' ', 'W'],
+    ['W', '4', 'W', 'T', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
+    ['W', 'T', 'W', '3', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
+    ['W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W']
+];
+
+var portalsCoor = [
+    [8, 1], [10, 2], [3, 10], [1, 9]
+];
+
+var portals1Position = portalsCoor[0];
+var portals2Position = portalsCoor[1];
+var portals3Position = portalsCoor[2];
+var portals4Position = portalsCoor[3];
+
+
+function randomEmptyPlace() { // spawn du player ( sur une case vide aléatoire)
+    var randomPlayerY = Math.floor(Math.random() * world.length);
+    var randomPlayerX = Math.floor(Math.random() * world.length);
+
+        while (world[randomPlayerY][randomPlayerX] != ' ') {
+            randomPlayerY = Math.floor(Math.random() * world.length);
+            randomPlayerX = Math.floor(Math.random() * world.length);
+        }
+    return [randomPlayerX, randomPlayerY];
+}
+
+
+function createRandomPlayer(){ // spawn du player après une mort ( sur une case vide aléatoire)
+    var randomPlayerY = Math.floor(Math.random() * world.length);
+    var randomPlayerX = Math.floor(Math.random() * world.length);
+
+        while (world[randomPlayerY][randomPlayerX] != ' ' || (Math.abs(randomPlayerX - ennemiPosition[0]) < 3 ) || (Math.abs(randomPlayerX - ennemiPosition[0]) < 3 || Math.abs(randomPlayerY - ennemiPosition[1]) < 3 )) {
+            randomPlayerY = Math.floor(Math.random() * world.length);
+            randomPlayerX = Math.floor(Math.random() * world.length);
+        }
+    return [randomPlayerX, randomPlayerY];
+}
+var playerPosition = randomEmptyPlace();
+var player2Position = randomEmptyPlace();
+
+function createRandomGold(){ //spawn du gold ( sur une case vide aléatoire)
+    var randomGoldY = Math.floor(Math.random() * world.length);
+    var randomGoldX = Math.floor(Math.random() * world.length);
+
+    while (world[randomGoldY][randomGoldX] != ' ' || ((randomGoldX == playerPosition[0] && randomGoldY == playerPosition[1]) || (Math.abs(randomGoldX - playerPosition[0]) < 1 || Math.abs(randomGoldY - playerPosition[1]) < 1 )) ){
+
+        randomGoldY = Math.floor(Math.random() * world.length);
+        randomGoldX = Math.floor(Math.random() * world.length);
+    }
+    
+    world[randomGoldY][randomGoldX] = 'G';
+}
+
+
+function createRandomEnnemi(){// spawn de l'ennemi ( sur une case vied aléatoire)
+    var randomEnnemiY = Math.floor(Math.random() * world.length);
+    var randomEnnemiX = Math.floor(Math.random() * world.length);
+
+    while (world[randomEnnemiY][randomEnnemiX] != ' ' || ((randomEnnemiX == playerPosition[0] && randomEnnemiY == playerPosition[1]) || (Math.abs(randomEnnemiX - playerPosition[0]) < 2 || Math.abs(randomEnnemiY - playerPosition[1]) < 2 )) ){
+
+        randomEnnemiY = Math.floor(Math.random() * world.length);
+        randomEnnemiX = Math.floor(Math.random() * world.length);
+    }
+    return[randomEnnemiY, randomEnnemiX];
+}
+var ennemiPosition = createRandomEnnemi();
+var ennemi2Position = createRandomEnnemi();
+
+createRandomGold()
+
+var colors = {
+    'W': 'rgb(0, 0, 0)',
+    ' ': 'rgb(255, 255, 255)',
+    'P': 'rgb(200, 120, 220)',
+    'P2': 'rgb(15, 200, 250)',
+    'G': 'rgb(235, 240, 20)',
+    'E': 'rgb(110, 65, 120)',
+    'E2': 'rgb(10, 115, 145)',
+    'T': 'rgb(245, 160, 15)'
+}
+
+function drawSquare(i, j, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(i * blockSize, j * blockSize, blockSize, blockSize);
+}
+
+function drawWorld() {
+    // Draw walls
+    var i = 0, j = 0;
+    for (j = 0; j < nBlocks ; j++) {
+        for (i = 0; i < nBlocks ; i++) {
+            var t = world[j][i];
+            var color = colors[t];
+            drawSquare(i, j, color);
+        }
+    }
+    // Draw player, player2 and ennemies
+    drawSquare(playerPosition[0], playerPosition[1], colors['P']);
+    drawSquare(player2Position[0], player2Position[1], colors['P2']);
+    drawSquare(ennemiPosition[0], ennemiPosition[1], colors['E']);
+    drawSquare(ennemi2Position[0], ennemi2Position[1], colors['E2']);
+}
+
+var ennemiTimer = 0;
+var ennemi2Timer = 0;
+
+function portals(square){
+    result = Math.floor(Math.random() * 4)
+
+    if (result == 0){
+        square[0] = portals1Position[0];
+        square[1] = portals1Position[1];
+    }
+    else if (result == 1){
+        square[0] = portals2Position[0];
+        square[1] = portals2Position[1];
+    }
+    else if (result == 2){
+        square[0] = portals3Position[0];
+        square[1] = portals3Position[1];
+    }
+    else{
+        square[0] = portals4Position[0];
+        square[1] = portals4Position[1];
+    }
+    return square
+}
+
+
+function deplacementEnnemy(dx, dy) {
+    var x = ennemiPosition[0];
+    var y = ennemiPosition[1];
+
+    x += dx;
+    y += dy;
+
+    if (world[y][x] == 'W') {
+        return false;
+    }
+
+    ennemiPosition[0] = x;
+    ennemiPosition[1] = y;
+
+    return true;
+}
+
+function deplacementEnnemy2(dx, dy) {
+    var x = ennemi2Position[0];
+    var y = ennemi2Position[1];
+
+    x += dx;
+    y += dy;
+
+    if (world[y][x] == 'W') {
+        return false;
+    }
+
+    ennemi2Position[0] = x;
+    ennemi2Position[1] = y;
+
+    return true;
+}
+
+function updateWorld() { // IA de l'ennemi
+    var currentEnnemiTime = new Date().getTime() / 1000.0
+    if (currentEnnemiTime - ennemiTimer > 1) {
+        ennemiTimer = currentEnnemiTime;
+
+        var dx = playerPosition[0] - ennemiPosition[0];
+        var dy = playerPosition[1] - ennemiPosition[1];
+
+        var tx = dx > 0 ? 1 : dx < 0 ? -1 : 0;
+        var ty = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+
+        if (Math.abs(dx) >= Math.abs(dy)) {
+            if (tx == 0 || !deplacementEnnemy(tx, 0)) {
+                if (ty == 0 || !deplacementEnnemy(0, ty)) {
+                    tx = Math.random() > 0.5 ? 1 : -1;
+                    ty = Math.random() > 0.5 ? 1 : -1;
+                    deplacementEnnemy(tx, ty);
+                }
+            }
+        }
+
+        else if (Math.abs(dx) < Math.abs(dy)) {
+            if (ty == 0 || !deplacementEnnemy(0, ty)) {
+                if (tx == 0 || !deplacementEnnemy(tx, 0)) {
+                    tx = Math.random() > 0.5 ? 1 : -1;
+                    ty = Math.random() > 0.5 ? 1 : -1;
+                    deplacementEnnemy(tx, ty);
+                }
+            }
+        }
+
+        if (ennemiPosition[0] == playerPosition[0] && ennemiPosition[1] == playerPosition[1]) {
+            score -= 5;
+            playerPosition = createRandomPlayer();
+        }
+
+        if (ennemiPosition[0] == player2Position[0] && ennemiPosition[1] == player2Position[1]) {
+            score2 -= 5;
+            player2Position = createRandomPlayer();
+        }
+
+        var x = ennemiPosition[0];
+        var y = ennemiPosition[1];
+        var t = world[y][x];
+
+        if (t == 'T'){
+            portals(ennemiPosition);
+        }
+
+    }   
+}
+
+function updateEnnemmi2() { // IA de l'ennemi2
+    var currentEnnemi2Time = new Date().getTime() / 1000.0
+    if (currentEnnemi2Time - ennemi2Timer > 1) {
+        ennemi2Timer = currentEnnemi2Time;
+
+        var dx = player2Position[0] - ennemi2Position[0];
+        var dy = player2Position[1] - ennemi2Position[1];
+
+        var tx = dx > 0 ? 1 : dx < 0 ? -1 : 0;
+        var ty = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+
+        if (Math.abs(dx) >= Math.abs(dy)) {
+            if (tx == 0 || !deplacementEnnemy2(tx, 0)) {
+                if (ty == 0 || !deplacementEnnemy2(0, ty)) {
+                    tx = Math.random() > 0.5 ? 1 : -1;
+                    ty = Math.random() > 0.5 ? 1 : -1;
+                    deplacementEnnemy2(tx, ty);
+                }
+            }
+        }
+
+        else if (Math.abs(dx) < Math.abs(dy)) {
+            if (ty == 0 || !deplacementEnnemy2(0, ty)) {
+                if (tx == 0 || !deplacementEnnemy2(tx, 0)) {
+                    tx = Math.random() > 0.5 ? 1 : -1;
+                    ty = Math.random() > 0.5 ? 1 : -1;
+                    deplacementEnnemy2(tx, ty);
+                }
+            }
+        }
+
+        if (ennemi2Position[0] == player2Position[0] && ennemi2Position[1] == player2Position[1]) {
+            score2 -= 5;
+            player2Position = createRandomPlayer();
+        }
+
+        if (ennemi2Position[0] == playerPosition[0] && ennemi2Position[1] == playerPosition[1]) {
+            score -= 5;
+            playerPosition = createRandomPlayer();
+        }
+
+        var x = ennemi2Position[0];
+        var y = ennemi2Position[1];
+        var t = world[y][x];
+
+        if (t == 'T'){
+            portals(ennemi2Position);
+        }
+
+    }   
+}
+
+
+document.getElementsByTagName('body')[0].onkeydown = function (e){
+    playerControles(e.which);
+    player2Controles(e.which);
+}
+
+function playerControles(code){ //controle du player
+    var x = playerPosition[0];
+    var y = playerPosition[1];
+
+    if (code == 38) { // up
+        y -= 1;
+    }
+    else if (code == 40) { // down
+        y += 1;
+    }
+    if (code == 37) { // left
+        x -= 1;
+    }
+    else if (code == 39) { // right
+        x += 1;
+    }
+
+    var t = world[y][x];
+
+    if (t == 'W') {
+        return;
+    }
+
+    playerPosition[0] = x;
+    playerPosition[1] = y;
+
+    if (t == 'G') {
+        score += 1;
+        world[y][x] = ' ';
+        createRandomGold();
+    }
+
+
+    if (t == 'T'){
+        portals(playerPosition);
+    }
+
+
+};
+
+function player2Controles(code){ //controle du player2
+    var x = player2Position[0];
+    var y = player2Position[1];
+
+    if (code == 90) { // up
+        y -= 1;
+    }
+    else if (code == 83) { // down
+        y += 1;
+    }
+    if (code == 81) { // left
+        x -= 1;
+    }
+    else if (code == 68) { // right
+        x += 1;
+    }
+
+    var t = world[y][x];
+
+    if (t == 'W') {
+        return;
+    }
+
+    player2Position[0] = x;
+    player2Position[1] = y;
+
+    if (t == 'G') {
+        score2 += 1;
+        world[y][x] = ' ';
+        createRandomGold();
+    }
+
+    if (t == 'T'){
+        portals(player2Position);
+    }
+};
+
+
+
+
+
+
+
+
+function animateWorld() {
+    updateWorld();
+    updateEnnemmi2();
+    scoreEl.textContent = score;
+    scoreEl2.textContent = score2;
+    drawWorld();
+    window.requestAnimationFrame(animateWorld);
+}
+animateWorld();
+
+/* Idées à essayer
+
+ - ajouter aussi un ennemi qui apparaît dans une case aléatoire vide et poursuit le joueur et s'il l'attrape lui fait perdre un point et réapparaît dans une autre case
+
+*/
+
+
+</script>
+</body>
+</html>
