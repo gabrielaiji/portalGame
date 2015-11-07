@@ -105,7 +105,7 @@ function createRandomGold(){ //spawn du gold ( sur une case vide aléatoire)
 }
 
 
-function createRandomEnnemi(){// spawn de l'ennemi ( sur une case vied aléatoire)
+function createRandomEnnemi(){// spawn de l'ennemi ( sur une case vide aléatoire)
     var randomEnnemiY = Math.floor(Math.random() * world.length);
     var randomEnnemiX = Math.floor(Math.random() * world.length);
 
@@ -159,11 +159,6 @@ function drawWorld() {
     drawBall(ballYPosition[0], ballYPosition[1], colors['P']);
     drawBall(ball0Position[0], ball0Position[1], colors['P']);
     drawBall(ball1Position[0], ball1Position[1], colors['P']);
-
-    drawBall(ballX2Position[0], ballX2Position[1], colors['P2']);
-    drawBall(ballY2Position[0], ballY2Position[1], colors['P2']);
-    drawBall(ball02Position[0], ball02Position[1], colors['P2']);
-    drawBall(ball12Position[0], ball12Position[1], colors['P2']);
 }
 
 
@@ -704,9 +699,9 @@ function animateWorld() {
 }
 animateWorld();
 
-/* Idées à essayer
+/* Á faire
 
- - ajouter aussi un ennemi qui apparaît dans une case aléatoire vide et poursuit le joueur et s'il l'attrape lui fait perdre un point et réapparaît dans une autre case
+ - Les balles du P2
 
 */
 
